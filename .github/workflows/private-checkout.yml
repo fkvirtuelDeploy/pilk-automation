@@ -1,4 +1,4 @@
-name: Private source checkout probe
+name: Private source build probe
 
 on:
   workflow_dispatch:
@@ -7,9 +7,9 @@ permissions:
   contents: read
 
 jobs:
-  checkout:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       - name: Read the private PILK repository
         uses: actions/checkout@v4
@@ -21,3 +21,14 @@ jobs:
           persist-credentials: false
       - name: Confirm private checkout
         run: test -f site/package.json && echo private-checkout-ok
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+        env:
+          SITE_URL: https://pilk-3i8.pages.dev
