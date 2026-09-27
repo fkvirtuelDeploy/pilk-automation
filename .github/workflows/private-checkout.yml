@@ -1,0 +1,23 @@
+name: Private source checkout probe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read the private PILK repository
+        uses: actions/checkout@v4
+        with:
+          repository: lynxerinc/pilk-news
+          ref: main
+          path: site
+          ssh-key: ${{ secrets.PILK_READONLY_DEPLOY_KEY }}
+          persist-credentials: false
+      - name: Confirm private checkout
+        run: test -f site/package.json && echo private-checkout-ok
