@@ -30,7 +30,8 @@ jobs:
           cache-dependency-path: site/package-lock.json
       - run: npm ci
         working-directory: site
-      - run: npm run sync
+      - name: Collect RSS and prepare the live update
+        run: node scripts/write-live.js
         working-directory: site
       - name: Open a private checkout for the archive backup
         uses: actions/checkout@v4
@@ -41,6 +42,13 @@ jobs:
           ssh-key: ${{ secrets.PILK_WRITE_DEPLOY_KEY }}
       - name: Commit new articles to the private repository
         run: bash site/scripts/commit-archive.sh site backup
+      - name: Publish prepared articles to Cloudflare KV
+        run: node scripts/publish-prepared-live.js
+        working-directory: site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PILK_KV_NAMESPACE_ID: ${{ secrets.PILK_KV_NAMESPACE_ID }}
       - run: npm run build
         working-directory: site
         env:
