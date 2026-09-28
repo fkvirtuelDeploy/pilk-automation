@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pilk-pages
+  group: pilk-private-archive
   cancel-in-progress: false
 
 jobs:
@@ -40,23 +40,7 @@ jobs:
           path: backup
           ssh-key: ${{ secrets.PILK_WRITE_DEPLOY_KEY }}
       - name: Commit new articles to the private repository
-        shell: bash
-        run: |
-          if [ "$(git -C site rev-parse HEAD)" != "$(git -C backup rev-parse HEAD)" ]; then
-            echo "Private repository changed during collection; retry this run."
-            exit 1
-          fi
-          cp site/data/archive.json backup/data/archive.json
-          cd backup
-          git config user.name "PILK Archive"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/archive.json
-          if git diff --cached --quiet; then
-            echo "Private archive is already current."
-            exit 0
-          fi
-          git commit -m "Update PILK article archive"
-          git push origin HEAD:main
+        run: bash site/scripts/commit-archive.sh site backup
       - run: npm run build
         working-directory: site
         env:

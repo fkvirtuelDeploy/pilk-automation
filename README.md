@@ -1,15 +1,17 @@
 # PILK automation
 
-This public repository contains only GitHub Actions workflows. The PILK source and article archive stay in the private `lynxerinc/pilk-news` repository. The workflows fetch the private source with a read-only deploy key; no source or articles are committed here.
+This public repository contains only GitHub Actions workflows. The source code and the complete article archive live in the private `lynxerinc/pilk-news` repository. Cloudflare KV is a delivery cache and secondary backup, not the source of truth.
 
-A small Cloudflare Worker triggers `live.yml` at UTC minutes 7, 22, 37 and 52. That job collects the current RSS feeds and writes recent articles directly to Cloudflare KV. The same Worker triggers `pages.yml` daily at 04:17 UTC. The daily job starts from the private Git archive, collects articles, builds and deploys the full static site, saves an extra copy to KV, and commits `data/archive.json` to the private repository. That Git backup keeps the content portable to another host.
+A small Cloudflare Worker starts `live.yml` at UTC minutes 7, 22, 37 and 52. The job checks out the private repository, fetches RSS, commits and pushes `data/archive.json` there only when articles changed, and then publishes the prepared latest articles to Cloudflare KV. A manually added article in the private archive is preserved and can appear in the live feed on the next pass.
 
-Both workflows can also be started manually from the Actions tab. The live workflow was verified end to end on scheduled Cloudflare triggers at 15:37 and 15:52 UTC on September 28, 2026. These times are a target cadence; RSS publication and job execution can introduce delay.
+The same Worker starts `pages.yml` every four hours at UTC minute 17. That job checks out the current private repository, merges new RSS articles, commits any archive change before publication, builds the static HTML, deploys Cloudflare Pages and stores another compressed archive copy in KV. At six Pages deployments per day, the cadence is about 180 per month, below the Free plan's 500-deployment limit.
+
+Both workflows can also be started manually from the Actions tab. They use the same concurrency group to avoid concurrent archive commits. If the private repository changes during a collection, the job fails safely and retries on the next scheduled run instead of overwriting that change.
 
 Required Actions secrets, all installed:
 
 - `PILK_READONLY_DEPLOY_KEY` (private source read access)
-- `PILK_WRITE_DEPLOY_KEY` (private archive backup only)
+- `PILK_WRITE_DEPLOY_KEY` (private archive write access)
 - `CLOUDFLARE_API_TOKEN` (Workers KV and Cloudflare Pages)
 - `CLOUDFLARE_ACCOUNT_ID`
 - `PILK_KV_NAMESPACE_ID`
