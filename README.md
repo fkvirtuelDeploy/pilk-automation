@@ -1,10 +1,10 @@
 # PILK automation
 
-This public repository contains only GitHub Actions workflows and a timestamp of the last successful daily run. The PILK source and article archive stay in the private `lynxerinc/pilk-news` repository. A read-only deploy key stored as an Actions secret lets the runner fetch that source without publishing it here.
+This public repository contains only GitHub Actions workflows. The PILK source and article archive stay in the private `lynxerinc/pilk-news` repository. The workflows fetch the private source with a read-only deploy key; no source or articles are committed here.
 
-`live.yml` fetches the current RSS feeds every 15 minutes (UTC minutes 7, 22, 37 and 52) and writes the latest articles directly to Cloudflare KV. `pages.yml` runs at 04:17 UTC each day: it restores the archive from KV, collects articles, builds the static HTML, deploys Cloudflare Pages, saves the archive to KV, then commits that archive to the private Git repository. This private commit makes the content portable to another host. The daily job also updates a harmless timestamp in this public repository to keep its scheduled workflows active.
+A small Cloudflare Worker triggers `live.yml` at UTC minutes 7, 22, 37 and 52. That job collects the current RSS feeds and writes recent articles directly to Cloudflare KV. The same Worker triggers `pages.yml` daily at 04:17 UTC. The daily job restores the archive, collects articles, builds and deploys the full static site, saves the archive to KV, and commits `data/archive.json` to the private repository. That Git backup keeps the content portable to another host.
 
-The manual runner, private checkout, live publishing and full Pages deployment have been verified. GitHub Actions may delay scheduled runs under load, so the 15-minute cadence is a target rather than an instant push service.
+Both workflows can also be started manually from the Actions tab. The live workflow was verified end to end on scheduled Cloudflare triggers at 15:37 and 15:52 UTC on September 28, 2026. These times are a target cadence; RSS publication and job execution can introduce delay.
 
 Required Actions secrets, all installed:
 
@@ -14,4 +14,4 @@ Required Actions secrets, all installed:
 - `CLOUDFLARE_ACCOUNT_ID`
 - `PILK_KV_NAMESPACE_ID`
 
-No secret values belong in this repository or in workflow logs. The old Cloudflare hourly Cron can be removed once the new schedule is observed in production.
+No secret values belong in this repository or in workflow logs.
